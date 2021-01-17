@@ -1,0 +1,31 @@
+{
+  "name": "openfor-server",
+  "version": "1.0.0",
+  "description": "openfor server writen in node graphql",
+  "main": "index.js",
+  "scripts": {
+    "start:dev": "nodemon src/app/index.ts"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pedroribeiro/openfor-server.git"
+  },
+  "author": "Pedro Ribeiro",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/pedroribeiro/openfor-server/issues"
+  },
+  "homepage": "https://github.com/pedroribeiro/openfor-server#readme",
+  "devDependencies": {
+    "@types/node": "^14.14.21",
+    "nodemon": "^2.0.7",
+    "ts-node": "^9.1.1",
+    "typescript": "^4.1.3"
+  },
+  "dependencies": {
+    "pg": "^8.5.1",
+    "postgres": "^1.0.2",
+    "reflect-metadata": "^0.1.13",
+    "typeorm": "^0.2.30"
+  }
+}
