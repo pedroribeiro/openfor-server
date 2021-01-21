@@ -1,13 +1,38 @@
-import { BaseEntity, Column, Entity, PrimaryGeneratedColumn } from "typeorm";
-
+import { IsEmail } from "class-validator";
+import { Field, ObjectType } from "type-graphql";
+import {
+  BaseEntity,
+  Column,
+  CreateDateColumn,
+  Entity,
+  PrimaryGeneratedColumn,
+  UpdateDateColumn,
+} from "typeorm";
 
 @Entity()
+@ObjectType()
 export class User extends BaseEntity {
+  @Field()
+  @PrimaryGeneratedColumn()
+  id!: number;
 
-@PrimaryGeneratedColumn()
-id!: number;
+  @Field()
+  @Column({ unique: true })
+  userName!: string;
 
-@Column({unique: true})
-username!: string;
+  @Field()
+  @Column({ unique: true })
+  @IsEmail()
+  email!: string;
 
+  @Column()
+  password!: string;
+
+  @Field(() => String)
+  @CreateDateColumn()
+  createdAt: Date;
+
+  @Field(() => String)
+  @UpdateDateColumn()
+  updatedAt: Date;
 }
