@@ -2,11 +2,11 @@ import { User } from "../domain/entities/User";
 import { Field, ObjectType } from "type-graphql";
 
 @ObjectType()
-class Errors {
+export class Errors {
   @Field()
-  field: string;
+  field?: string;
   @Field()
-  message: string;
+  message?: string;
 }
 
 @ObjectType()

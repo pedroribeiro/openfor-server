@@ -1,4 +1,4 @@
-import { IsEmail } from "class-validator";
+import { IsEmail, MinLength } from "class-validator";
 import { Field, ObjectType } from "type-graphql";
 import {
   BaseEntity,
@@ -22,10 +22,15 @@ export class User extends BaseEntity {
 
   @Field()
   @Column({ unique: true })
-  @IsEmail()
+  @IsEmail({},{
+    message: 'Invalid email'
+  })
   email!: string;
 
   @Column()
+  @MinLength(6, {
+    message: 'Password length must be greater than 6 characters'
+  })
   password!: string;
 
   @Field(() => String)

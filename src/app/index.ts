@@ -1,8 +1,12 @@
+import { Context } from './../types/Context';
 import "reflect-metadata";
 import { UserResolver } from "./../resolvers/User";
 import express from "express";
 import cors from "cors";
 import postgres from "../driver/database/postgres";
+import Redis from "ioredis";
+import connectRedis from "connect-redis";
+import session from "express-session";
 import { createConnection } from "typeorm";
 import { ApolloServer } from "apollo-server-express";
 import { buildSchema } from "type-graphql";
@@ -15,6 +19,8 @@ const start = async () => {
   //   connection.runMigrations();
 
   const app = express();
+  const redis = new Redis(process.env.REDIS_URL);
+  const RedisStore = connectRedis(session);
 
   app.use(
     cors({
@@ -23,14 +29,34 @@ const start = async () => {
     })
   );
 
+  app.use(
+    session({
+      name: "openFor",
+      store: new RedisStore({
+        client: redis,
+        disableTouch: true,
+      }),
+      cookie: {
+        maxAge: 1000 * 60 * 60 * 24 * 30,
+        httpOnly: true,
+        sameSite: "lax",
+        secure: process.env.SERVER_MODE === "production" ? true : false,
+      },
+      saveUninitialized: false,
+      secret: process.env.SESSION_SECRET!,
+      resave: false,
+    })
+  );
+
   const apollo = new ApolloServer({
     schema: await buildSchema({
       resolvers: [UserResolver],
       validate: false,
     }),
-    context: ({ req, res }) => ({
+    context: ({ req, res }): Context => ({
       req,
       res,
+      redis,
       userService: InitUserService(),
     }),
   });

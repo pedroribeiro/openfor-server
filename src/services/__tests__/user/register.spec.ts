@@ -5,9 +5,9 @@ jest.mock("../../../driver/database/postgres");
 
 const repository = new Repository();
 
-const userRepository = {
+const userRepository = ({
   getRepository: () => repository,
-};
+} as unknown) as Connection;
 
 describe("register method", () => {
   beforeEach(() => {
@@ -16,8 +16,9 @@ describe("register method", () => {
 
   it("should return a valid user", async () => {
     const userName = "user";
-    const email = "user@user";
+    const email = "user@user.com";
     const id = 1;
+    const password = "password";
 
     const expectedUser = {
       userName,
@@ -27,12 +28,10 @@ describe("register method", () => {
 
     repository.save = jest.fn().mockResolvedValueOnce(expectedUser);
 
-    const userService = new UserService(
-      (userRepository as unknown) as Connection
-    );
+    const userService = new UserService(userRepository);
 
     expect(
-      await userService.register(userName, email, "password")
+      await userService.register({ userName, email, password})
     ).toStrictEqual({
       user: {
         userName,
