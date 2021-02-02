@@ -7,15 +7,14 @@ import { User } from "../domain/entities/User";
 export class UserResolver {
   @Query(() => UserResponse)
   async logged(@Ctx() { req, userService }: Context) {
-    console.log("res", req.session.userId)
     if (!req.session.userId) {
-      return { user: null};
+      return { user: null };
     }
+
     const {
       session: { userId },
     } = req;
-    console.log("userId", userId);
-    
+
     const user = userService.findById({ userId });
     return { user };
   }
@@ -40,5 +39,20 @@ export class UserResolver {
       req.session.userId = user.id;
     }
     return { user, errors };
+  }
+
+  @Mutation(() => Boolean)
+  async logout(@Ctx() { req, res }: Context) {
+    return new Promise((resolve) => {
+      req.session.destroy((error: any) => {
+        res.clearCookie(process.env.COOKIE_NAME!);
+        if (error) {
+          console.log(error);
+          resolve(false);
+          return;
+        }
+        resolve(true);
+      });
+    });
   }
 }

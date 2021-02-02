@@ -31,7 +31,7 @@ const start = async () => {
 
   app.use(
     session({
-      name: "openFor",
+      name: process.env.COOKIE_NAME,
       store: new RedisStore({
         client: redis,
         disableTouch: true,
