@@ -55,4 +55,30 @@ export class UserResolver {
       });
     });
   }
+
+  @Mutation(() => Boolean)
+  async forgotPassword(
+    @Arg("email") email: string,
+    @Ctx() { redis, userService }: Context
+  ) {
+    return userService.forgotPassword({ redis, email });
+  }
+
+  @Mutation(() => UserResponse)
+  async changePassword(
+    @Arg("token") token: string,
+    @Arg("newPassword") newPassword: string,
+    @Ctx() { req, redis, userService }: Context
+  ) {
+    const { user, errors } = await userService.updatePassword(redis, {
+      token,
+      newPassword,
+    });
+    if (user) {
+      req.session.userId = user.id;
+    }
+    return { user, errors };
+  }
 }
+
+// [http://localhost:3000/change-password/0ab6ba87-2fa3-4c5d-84e7-757b12728368]

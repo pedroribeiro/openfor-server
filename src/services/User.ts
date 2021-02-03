@@ -1,5 +1,5 @@
 import { UserResponse, Errors } from "../types/UserResponse";
-import { Connection } from "typeorm";
+import { Connection, UpdateResult } from "typeorm";
 import { User } from "../domain/entities/User";
 import {
   init as InitDB,
@@ -7,7 +7,10 @@ import {
   // DeleteResult,
 } from "../driver/database/postgres";
 import argon2 from "argon2";
-import { validate, validateOrReject, ValidationError } from "class-validator";
+import { v4 } from "uuid";
+import { validate } from "class-validator";
+import { Redis } from "ioredis";
+import { passwordChangeEmail } from "../driver/notifier/nodemailer";
 
 export class UserService {
   private userRepository: Repository<User>;
@@ -16,12 +19,52 @@ export class UserService {
     this.userRepository = userRepository.getRepository(User);
   }
 
-  public findById = async ({ userId }: { userId: number }): Promise<User | undefined> => {
+  public findById = async ({
+    userId,
+  }: {
+    userId: number;
+  }): Promise<User | undefined> => {
     return this.userRepository.findOne({
       where: {
-        id: userId
-      }
-    })  
+        id: userId,
+      },
+    });
+  };
+
+  public findByEmail = async ({
+    email,
+  }: {
+    email: string;
+  }): Promise<User | undefined> => {
+    return this.userRepository.findOne({
+      where: {
+        email: email,
+      },
+    });
+  };
+
+  public forgotPassword = async ({
+    email,
+    redis,
+  }: {
+    email: string;
+    redis: Redis;
+  }): Promise<Boolean> => {
+    const user = await this.findByEmail({
+      email,
+    });
+
+    if (!user) {
+      return true;
+    }
+
+    const token = v4();
+
+    await redis.set(token, user.id, "ex", 1000 * 60 * 60 * 24);
+
+    await passwordChangeEmail({ to: user.email, token });
+
+    return true;
   };
 
   public register = async ({
@@ -121,6 +164,64 @@ export class UserService {
     });
 
     return errors;
+  };
+
+  public updatePassword = async (
+    redis: Redis,
+    {
+      token,
+      newPassword,
+    }: {
+      token: string;
+      newPassword: string;
+    }
+  ): Promise<UserResponse> => {
+    if (newPassword.length < 6) {
+      return {
+        errors: [
+          {
+            field: "password",
+            message: "password length must be greater than 6",
+          },
+        ],
+      };
+    }
+
+    const userId = await redis.get(token);
+    if (!userId) {
+      return {
+        errors: [
+          {
+            field: "password",
+            message: "password change token expired",
+          },
+        ],
+      };
+    }
+    const userIdparsed = parseInt(userId);
+    const user = await this.findById({ userId: userIdparsed });
+
+    if (!user) {
+      return {
+        errors: [
+          {
+            field: "password",
+            message: "user not find",
+          },
+        ],
+      };
+    }
+
+    await this.userRepository.update(
+      {
+        id: user.id,
+      },
+      {
+        password: await argon2.hash(newPassword),
+      }
+    );
+    await redis.del(token);
+    return { user };
   };
 }
 
